@@ -1,0 +1,73 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Databases
+dev.db
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+logs/
+*.log
+
+# Coverage / testing
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.pytest_cache/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Type checkers / linters
+.mypy_cache/
+.pytype/
+.ruff_cache/
+.pylint.d/
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Alembic caches
+alembic/versions/__pycache__/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Misc
+__pypackages__/
+node_modules/
+.git-credentials
+*.pem
+*.key
+*.crt
+.python-version
