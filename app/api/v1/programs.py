@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import db_session, require_api_key
 from app.models.program import Program
 from app.models.course_unit import CourseUnit
-from app.schemas.program import ProgramCreate, ProgramRead
+from app.models.faculty import Faculty
+from app.schemas.program import ProgramCreate, ProgramRead, ProgramUpdate
 from app.schemas.course_unit import CourseUnitRead
 
 router = APIRouter(prefix="/api/v1/programs", tags=["Programs"])
@@ -50,3 +51,38 @@ def create_program(payload: ProgramCreate, db: Session = Depends(db_session)):
     db.commit()
     db.refresh(obj)
     return obj
+
+
+@router.patch("/{program_id}", response_model=ProgramRead, dependencies=[Depends(require_api_key)])
+def update_program(program_id: int, payload: ProgramUpdate, db: Session = Depends(db_session)):
+    obj = db.get(Program, program_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    if payload.code and payload.code != obj.code:
+        if db.query(Program).filter(Program.code == payload.code).first():
+            raise HTTPException(status_code=400, detail="Program code already exists")
+        obj.code = payload.code
+
+    if payload.faculty_id is not None:
+        if not db.get(Faculty, payload.faculty_id):
+            raise HTTPException(status_code=400, detail="Faculty not found")
+        obj.faculty_id = payload.faculty_id
+
+    if payload.name is not None:
+        obj.name = payload.name
+
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.delete("/{program_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
+def delete_program(program_id: int, db: Session = Depends(db_session)):
+    obj = db.get(Program, program_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Program not found")
+    db.delete(obj)
+    db.commit()
+    return

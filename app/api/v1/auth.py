@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import db_session, get_current_user
 from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
 from app.models.user import User
+from app.models.program import Program
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.user import UserCreate, UserRead
 
@@ -18,10 +19,19 @@ def register(payload: UserCreate, db: Session = Depends(db_session)):
     if db.query(User).filter(User.username == payload.username).first():
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    # Validate program exists and belongs to the provided faculty
+    program = db.query(Program).get(payload.program_id)
+    if not program:
+        raise HTTPException(status_code=400, detail="Program not found")
+    if program.faculty_id != payload.faculty_id:
+        raise HTTPException(status_code=400, detail="Program does not belong to the specified faculty")
+
     user = User(
         email=payload.email,
         username=payload.username,
         hashed_password=get_password_hash(payload.password),
+        faculty_id=payload.faculty_id,
+        program_id=payload.program_id,
     )
     db.add(user)
     db.commit()

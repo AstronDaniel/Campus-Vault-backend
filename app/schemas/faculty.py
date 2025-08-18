@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class FacultyBase(BaseModel):
@@ -15,3 +16,8 @@ class FacultyRead(FacultyBase):
 
     class Config:
         from_attributes = True
+
+
+class FacultyUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=255)
+    code: Optional[str] = Field(default=None, min_length=2, max_length=50)
