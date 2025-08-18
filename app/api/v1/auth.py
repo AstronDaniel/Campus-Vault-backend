@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.program import Program
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordUpdate
+from app.utils.storage import get_storage
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 settings = get_settings()
@@ -148,16 +149,11 @@ async def upload_avatar(
         else:
             raise HTTPException(status_code=400, detail="Unsupported image type. Use jpg or png")
 
-    base_dir = Path(settings.FILE_STORAGE_DIR) / "avatars"
-    base_dir.mkdir(parents=True, exist_ok=True)
-    final_name = f"user_{user.id}.{ext}"
-    dest_path = base_dir / final_name
+    # Save via storage backend (Drive or Local)
+    storage = get_storage()
+    _, public_url = storage.save_avatar(user_id=user.id, filename=file.filename, content_type=content_type, content=content)
 
-    with dest_path.open("wb") as out:
-        out.write(content)
-
-    # Store a URL served by the static mount
-    user.avatar_url = f"/static/avatars/{final_name}"
+    user.avatar_url = public_url
     db.add(user)
     db.commit()
     db.refresh(user)

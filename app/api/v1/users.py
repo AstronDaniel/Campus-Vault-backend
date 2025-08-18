@@ -87,7 +87,7 @@ def bulk_delete_users(payload: UsersBulkDeleteRequest, db: Session = Depends(db_
             not_found.append(uid)
             continue
 
-        # Remove avatar file if it exists and is stored locally
+        # Remove avatar if exists
         avatar = getattr(user, "avatar_url", None)
         if avatar:
             prefix = "/static/"
@@ -98,6 +98,9 @@ def bulk_delete_users(payload: UsersBulkDeleteRequest, db: Session = Depends(db_
                     abs_path.unlink(missing_ok=True)
                 except Exception:
                     pass
+            else:
+                # Remote (Drive)
+                pass
 
         db.delete(user)
         deleted += 1
@@ -112,7 +115,7 @@ def delete_user(user_id: int, db: Session = Depends(db_session)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Remove avatar file if it exists and is stored locally
+    # Remove avatar if exists
     avatar = getattr(user, "avatar_url", None)
     if avatar:
         prefix = "/static/"
@@ -122,8 +125,10 @@ def delete_user(user_id: int, db: Session = Depends(db_session)):
             try:
                 abs_path.unlink(missing_ok=True)
             except Exception:
-                # Ignore filesystem errors on delete to avoid blocking user deletion
                 pass
+        else:
+            # Remote (Drive)
+            pass
 
     db.delete(user)
     db.commit()

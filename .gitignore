@@ -72,3 +72,6 @@ node_modules/
 *.crt
 .python-version
 files/
+*.json
+scripts/
+note.md

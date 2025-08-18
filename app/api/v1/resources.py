@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Header, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
 from hashlib import sha256 as _sha256
@@ -20,6 +20,7 @@ from app.schemas.resource import (
     CommentCreate, CommentRead, RatingCreate, ResourceListResponse,
 )
 from app.models.user import User
+from app.utils.storage import get_storage
 
 router = APIRouter(prefix="/api/v1/resources", tags=["Resources"])
 settings = get_settings()
@@ -71,32 +72,21 @@ async def upload_resource(
             }
         })
 
-    # Save file
+    # Save using storage backend
     content_type = (file.content_type or "application/octet-stream").lower()
-    base_dir = Path(settings.FILE_STORAGE_DIR) / "resources" / str(course_unit_id)
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    # Store using hash + original extension to avoid filename collisions
-    from pathlib import Path as _P
-    ext = _P(file.filename or "").suffix or ""
-    stored_name = f"{digest}{ext}"
-    dest_path = base_dir / stored_name
-
-    with dest_path.open("wb") as out:
-        out.write(content)
-
-    url = f"/static/resources/{course_unit_id}/{stored_name}"
+    storage = get_storage()
+    storage_path, url = storage.save_resource(course_unit_id=course_unit_id, digest=digest, filename=file.filename, content_type=content_type, content=content)
 
     resource = Resource(
         course_unit_id=course_unit_id,
         uploader_id=user.id,
         title=title,
         description=description,
-        filename=file.filename or stored_name,
+        filename=file.filename or digest,
         content_type=content_type,
         size_bytes=len(content),
         sha256=digest,
-        storage_path=str(dest_path),
+        storage_path=storage_path,
         url=url,
     )
     db.add(resource)
@@ -189,13 +179,11 @@ def delete_resource(
         if not settings.API_KEY or x_api_key != settings.API_KEY:
             raise HTTPException(status_code=403, detail="Not authorized to delete this resource")
 
-    # Delete file from disk if local
-    prefix = "/static/"
-    if r.url and r.url.startswith(prefix):
-        rel_path = r.url[len(prefix):]
-        abs_path = Path(settings.FILE_STORAGE_DIR) / rel_path
+    # Delete from storage if this is the last reference
+    refs = db.query(Resource).filter(Resource.storage_path == r.storage_path, Resource.id != r.id).count()
+    if refs == 0:
         try:
-            abs_path.unlink(missing_ok=True)
+            get_storage().delete(r.storage_path)
         except Exception:
             pass
 
@@ -230,14 +218,17 @@ def download_resource(resource_id: int, db: Session = Depends(db_session), user:
     db.add(ResourceDownloadEvent(resource_id=r.id, user_id=user.id))
     db.commit()
 
-    prefix = "/static/"
-    if not r.url or not r.url.startswith(prefix):
-        raise HTTPException(status_code=500, detail="Invalid resource location")
-    rel_path = r.url[len(prefix):]
-    abs_path = Path(settings.FILE_STORAGE_DIR) / rel_path
-    if not abs_path.exists():
-        raise HTTPException(status_code=404, detail="File missing on server")
-    return FileResponse(path=str(abs_path), media_type=r.content_type, filename=r.filename)
+    storage = get_storage()
+    resolution = storage.resolve_download(r.storage_path, r.url or "")
+    if resolution.kind == "path":
+        # Local file path, stream it
+        abs_path = resolution.value
+        if not Path(abs_path).exists():
+            raise HTTPException(status_code=404, detail="File missing on server")
+        return FileResponse(path=abs_path, media_type=r.content_type, filename=r.filename)
+    else:
+        # Redirect to remote URL (e.g., Google Drive)
+        return RedirectResponse(url=resolution.value, status_code=302)
 
 
 @router.post("/{existing_id}/link", response_model=ResourceRead)
@@ -398,24 +389,15 @@ def bulk_delete_resources(
             continue
 
         # Delete file only if this is the last DB entry pointing to it
-        prefix = "/static/"
-        file_to_delete: Path | None = None
-        if r.url and r.url.startswith(prefix):
-            rel_path = r.url[len(prefix):]
-            abs_path = Path(settings.FILE_STORAGE_DIR) / rel_path
-            # Count references to same storage_path
-            refs = db.query(Resource).filter(Resource.storage_path == r.storage_path, Resource.id != r.id).count()
-            if refs == 0:
-                file_to_delete = abs_path
+        refs = db.query(Resource).filter(Resource.storage_path == r.storage_path, Resource.id != r.id).count()
+        if refs == 0:
+            try:
+                get_storage().delete(r.storage_path)
+            except Exception:
+                pass
 
         db.delete(r)
         deleted += 1
-
-        if file_to_delete is not None:
-            try:
-                file_to_delete.unlink(missing_ok=True)
-            except Exception:
-                pass
 
     db.commit()
     return ResourcesBulkDeleteResponse(deleted=deleted, not_found=not_found)

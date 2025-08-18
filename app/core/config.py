@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     GDRIVE_REFRESH_TOKEN: Optional[str] = None
     GDRIVE_SERVICE_ACCOUNT_JSON_PATH: Optional[str] = None
     GDRIVE_PARENT_FOLDER_ID: Optional[str] = None
+    GDRIVE_PUBLIC_READ: bool = False
 
     # OneDrive / Microsoft 365
     MS_CLIENT_ID: Optional[str] = None
@@ -68,7 +69,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 1025
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
-    FROM_EMAIL: str = "noreply@campusvault.test"
+    FROM_EMAIL: str
 
     # Uploads
     MAX_UPLOAD_SIZE_MB: int = 25
