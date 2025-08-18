@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.api.v1 import auth as auth_router
 from app.api.v1 import faculties as faculties_router
 from app.api.v1 import programs as programs_router
 from app.api.v1 import course_units as course_units_router
+from app.api.v1 import users as users_router
 from app.core.config import get_settings
 from app.database import Base, engine
 import app.models # Import all models to ensure they are registered with SQLAlchemy
@@ -23,11 +26,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Ensure storage dir exists and mount static files
+Path(settings.FILE_STORAGE_DIR).mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/static",
+    StaticFiles(directory=f"{settings.FILE_STORAGE_DIR}/"),
+    name="static",
+)
+
 # Routers
 app.include_router(auth_router.router)
 app.include_router(faculties_router.router)
 app.include_router(programs_router.router)
 app.include_router(course_units_router.router)
+app.include_router(users_router.router)
 
 
 @app.get("/health")

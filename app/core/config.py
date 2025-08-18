@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # Storage
     DRIVE_PROVIDER: str = "local"  # local|gdrive|onedrive
-    FILE_STORAGE_DIR: str = "/var/lib/campusvault/files"
+    FILE_STORAGE_DIR: str
 
     # Google Drive
     GDRIVE_CLIENT_ID: Optional[str] = None
