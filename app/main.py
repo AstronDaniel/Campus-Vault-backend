@@ -2,15 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from fastapi.routing import APIRoute
+from fastapi.openapi.utils import get_openapi
+from typing import Any, Dict
 
 from app.api.v1 import auth as auth_router
 from app.api.v1 import faculties as faculties_router
 from app.api.v1 import programs as programs_router
 from app.api.v1 import course_units as course_units_router
 from app.api.v1 import users as users_router
+from app.api.v1 import resources as resources_router
+from app.api.v1 import catalog as catalog_router
+from app.api.v1 import admin as admin_router
 from app.core.config import get_settings
 from app.database import Base, engine
-import app.models # Import all models to ensure they are registered with SQLAlchemy
+import app.models as _models  # noqa: F401  # Ensure models are imported for SQLAlchemy
 
 
 settings = get_settings()
@@ -40,6 +46,42 @@ app.include_router(faculties_router.router)
 app.include_router(programs_router.router)
 app.include_router(course_units_router.router)
 app.include_router(users_router.router)
+app.include_router(resources_router.router)
+app.include_router(catalog_router.router)
+app.include_router(admin_router.router)
+
+# Update Swagger title with endpoint count
+_base_title = app.title
+
+
+def _count_operations() -> int:
+    count = 0
+    for route in app.routes:
+        if isinstance(route, APIRoute):
+            methods = {m for m in (route.methods or set()) if m not in {"HEAD", "OPTIONS"}}
+            count += len(methods)
+    return count
+
+
+def custom_openapi() -> Dict[str, Any]:
+    schema = getattr(app, "openapi_schema", None)
+    if schema is None:
+        schema = get_openapi(
+            title=f"{_base_title} · {_count_operations()} endpoints",
+            version=getattr(app, "version", "0"),
+            routes=app.routes,
+            description=None,
+        )
+        app.openapi_schema = schema
+    else:
+        # keep title in sync even if schema cached
+        info = schema.get("info") or {}
+        info["title"] = f"{_base_title} · {_count_operations()} endpoints"
+        schema["info"] = info
+    return schema
+
+
+app.openapi = custom_openapi  # type: ignore[assignment]
 
 
 @app.get("/health")
