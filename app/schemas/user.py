@@ -17,6 +17,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: int
     avatar_url: Optional[str] = None
+    is_verified: bool
     created_at: datetime
 
     class Config:
@@ -48,3 +49,7 @@ class UsersBulkDeleteRequest(BaseModel):
 class UsersBulkDeleteResponse(BaseModel):
     deleted: int
     not_found: list[int] = []
+
+
+class AdminVerifyUserRequest(BaseModel):
+    is_verified: bool

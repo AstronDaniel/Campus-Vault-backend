@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.program import Program
-from app.schemas.user import UserRead, UserUpdate, AdminPasswordReset, UsersBulkDeleteRequest, UsersBulkDeleteResponse
+from app.schemas.user import UserRead, UserUpdate, AdminPasswordReset, UsersBulkDeleteRequest, UsersBulkDeleteResponse, AdminVerifyUserRequest
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 settings = get_settings()
@@ -74,6 +74,18 @@ def admin_reset_password(user_id: int, payload: AdminPasswordReset, db: Session 
     db.add(user)
     db.commit()
     return
+
+
+@router.patch("/{user_id}/verify", response_model=UserRead, dependencies=[Depends(require_api_key)])
+def admin_verify_user(user_id: int, payload: AdminVerifyUserRequest, db: Session = Depends(db_session)):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_verified = payload.is_verified
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.delete("/bulk", response_model=UsersBulkDeleteResponse, dependencies=[Depends(require_api_key)])

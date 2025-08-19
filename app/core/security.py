@@ -40,6 +40,10 @@ def create_refresh_token(subject: str, expires_days: Optional[int] = None) -> st
     return _create_token(subject, "refresh", timedelta(days=days))
 
 
+def create_password_reset_token(subject: str, expires_minutes: int = 15) -> str:
+    return _create_token(subject, "password_reset", timedelta(minutes=expires_minutes))
+
+
 def decode_token(token: str, expected_type: str) -> dict[str, Any]:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALG])

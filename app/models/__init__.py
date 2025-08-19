@@ -8,3 +8,4 @@ from app.models import resource_bookmark  # noqa: F401
 from app.models import resource_comment  # noqa: F401
 from app.models import resource_rating  # noqa: F401
 from app.models import resource_download  # noqa: F401
+from app.models import notification  # noqa: F401

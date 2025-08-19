@@ -14,6 +14,7 @@ from app.api.v1 import users as users_router
 from app.api.v1 import resources as resources_router
 from app.api.v1 import catalog as catalog_router
 from app.api.v1 import admin as admin_router
+from app.api.v1 import notifications as notifications_router
 from app.core.config import get_settings
 from app.database import Base, engine
 import app.models as _models  # noqa: F401  # Ensure models are imported for SQLAlchemy
@@ -49,6 +50,7 @@ app.include_router(users_router.router)
 app.include_router(resources_router.router)
 app.include_router(catalog_router.router)
 app.include_router(admin_router.router)
+app.include_router(notifications_router.router)
 
 # Update Swagger title with endpoint count
 _base_title = app.title

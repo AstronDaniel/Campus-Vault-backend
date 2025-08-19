@@ -3,10 +3,23 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, get_current_user
 from app.core.config import get_settings
-from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    verify_password,
+    create_password_reset_token,
+    decode_token,
+)
 from app.models.user import User
 from app.models.program import Program
-from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
+from app.schemas.auth import (
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+    PasswordResetRequest,
+    PasswordResetConfirm,
+)
 from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordUpdate
 from app.utils.storage import get_storage
 
@@ -14,7 +27,9 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 settings = get_settings()
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserRead, status_code=status.HTTP_201_CREATED
+)
 def register(payload: UserCreate, db: Session = Depends(db_session)):
     # Check unique email/username
     if db.query(User).filter(User.email == payload.email).first():
@@ -55,8 +70,6 @@ def login(payload: LoginRequest, db: Session = Depends(db_session)):
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(payload: RefreshRequest):
-    from app.core.security import decode_token
-
     try:
         data = decode_token(payload.refresh_token, expected_type="refresh")
         sub = data.get("sub")
@@ -66,6 +79,43 @@ def refresh(payload: RefreshRequest):
     access = create_access_token(subject=str(sub))
     refresh = create_refresh_token(subject=str(sub))
     return TokenResponse(access_token=access, refresh_token=refresh, expires_in=60 * 30)
+
+
+@router.post("/password/reset/request", status_code=status.HTTP_204_NO_CONTENT)
+def password_reset_request(payload: PasswordResetRequest, db: Session = Depends(db_session)):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        # Do not leak whether a user exists
+        return
+    token = create_password_reset_token(subject=str(user.id), expires_minutes=30)
+    reset_link = f"{settings.SERVER_HOST}:{settings.SERVER_PORT}/reset?token={token}"
+    # TODO: send email. For now, log it.
+    print("Password reset link:", reset_link)
+    return
+
+
+@router.post("/password/reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def password_reset_confirm(payload: PasswordResetConfirm, db: Session = Depends(db_session)):
+    try:
+        data = decode_token(payload.token, expected_type="password_reset")
+        sub = data.get("sub")
+        if sub is None:
+            raise ValueError("missing sub")
+        user_id = int(sub)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password too short")
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    db.add(user)
+    db.commit()
+    return
 
 
 @router.get("/me", response_model=UserRead)
