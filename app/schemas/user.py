@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
+from app.models.user import UserRole
 
 
 class UserBase(BaseModel):
@@ -12,6 +13,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=128)
+    # Note: role is NOT included here - it defaults to STUDENT
 
 
 class UserRead(UserBase):
@@ -19,6 +21,7 @@ class UserRead(UserBase):
     avatar_url: Optional[str] = None
     is_verified: bool
     created_at: datetime
+    role: UserRole  # This shows the role in responses
 
     class Config:
         from_attributes = True
@@ -31,6 +34,7 @@ class UserUpdate(BaseModel):
     faculty_id: Optional[int] = None
     program_id: Optional[int] = None
     avatar_url: Optional[str] = None
+    # Note: role is NOT included here for regular users
 
 
 class PasswordUpdate(BaseModel):
@@ -53,3 +57,27 @@ class UsersBulkDeleteResponse(BaseModel):
 
 class AdminVerifyUserRequest(BaseModel):
     is_verified: bool
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: UserRole
+    faculty_id: int
+    program_id: int
+    avatar_url: Optional[str] = None
+    is_verified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserAdminUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[UserRole] = None
+    faculty_id: Optional[int] = None
+    program_id: Optional[int] = None
+    is_verified: Optional[bool] = None

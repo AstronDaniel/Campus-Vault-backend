@@ -21,6 +21,8 @@ from app.schemas.resource import (
 )
 from app.models.user import User
 from app.utils.storage import get_storage
+from app.services.activity_service import ActivityService
+from app.models.activity import ActivityType
 
 router = APIRouter(prefix="/api/v1/resources", tags=["Resources"])
 settings = get_settings()
@@ -92,6 +94,21 @@ async def upload_resource(
     db.add(resource)
     db.commit()
     db.refresh(resource)
+
+    # After successful upload, log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.RESOURCE_UPLOADED,
+        description=f"Uploaded resource: {resource.title}",
+        details={
+            "resource_id": resource.id,
+            "resource_type": resource.resource_type,
+            "file_size": resource.file_size,
+            "course_unit_id": resource.course_unit_id
+        }
+    )
+
     return resource
 
 
@@ -189,6 +206,16 @@ def delete_resource(
 
     db.delete(r)
     db.commit()
+
+    # After successful deletion, log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.RESOURCE_DELETED,
+        description=f"Deleted resource: {r.title}",
+        details={"resource_id": resource_id}
+    )
+
     return
 
 
@@ -229,6 +256,19 @@ def download_resource(resource_id: int, db: Session = Depends(db_session), user:
     else:
         # Redirect to remote URL (e.g., Google Drive)
         return RedirectResponse(url=resolution.value, status_code=302)
+
+    # After successful download, log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.RESOURCE_DOWNLOADED,
+        description=f"Downloaded resource: {r.title}",
+        details={
+            "resource_id": r.id,
+            "resource_type": r.resource_type,
+            "file_size": r.file_size
+        }
+    )
 
 
 @router.post("/{existing_id}/link", response_model=ResourceRead)

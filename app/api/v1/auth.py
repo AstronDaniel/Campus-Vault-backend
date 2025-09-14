@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.api.deps import db_session, get_current_user
 from app.core.config import get_settings
@@ -13,6 +14,7 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.models.program import Program
+from app.models.activity import ActivityType
 from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
@@ -22,6 +24,7 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordUpdate
 from app.utils.storage import get_storage
+from app.services.activity_service import ActivityService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 settings = get_settings()
@@ -54,6 +57,16 @@ def register(payload: UserCreate, db: Session = Depends(db_session)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # After successful registration, log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.USER_REGISTERED,
+        description=f"New user {user.username} registered",
+        details={"email": user.email, "faculty_id": user.faculty_id, "program_id": user.program_id}
+    )
+
     return user
 
 
@@ -65,6 +78,16 @@ def login(payload: LoginRequest, db: Session = Depends(db_session)):
 
     access = create_access_token(subject=str(user.id))
     refresh = create_refresh_token(subject=str(user.id))
+
+    # After successful login, log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.USER_LOGIN,
+        description=f"User {user.username} logged in",
+        details={"email": user.email, "login_time": datetime.utcnow().isoformat()}
+    )
+
     return TokenResponse(access_token=access, refresh_token=refresh, expires_in=60 * 30)
 
 
@@ -211,6 +234,17 @@ async def upload_avatar(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout():
-    # Stateless JWTs cannot be revoked without a store. Add Redis denylist later if needed.
-    return
+def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(db_session)
+):
+    # Log logout activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=current_user.id,
+        activity_type=ActivityType.USER_LOGOUT,
+        description=f"User {current_user.username} logged out",
+        details={"logout_time": datetime.utcnow().isoformat()}
+    )
+
+    return {"message": "Successfully logged out"}

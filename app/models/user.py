@@ -1,10 +1,19 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Boolean, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+import enum
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.activity import Activity
+
+
+class UserRole(enum.Enum):
+    STUDENT = "student"
+    ADMIN = "admin"
 
 
 class User(Base):
@@ -19,3 +28,7 @@ class User(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.STUDENT, nullable=False, server_default="student")
+
+    # Relationships
+    activities: Mapped[list["Activity"]] = relationship("Activity", back_populates="user")
