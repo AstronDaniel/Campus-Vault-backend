@@ -46,7 +46,12 @@ def list_program_course_units(
 def create_program(payload: ProgramCreate, db: Session = Depends(db_session)):
     if db.query(Program).filter(Program.code == payload.code).first():
         raise HTTPException(status_code=400, detail="Program code already exists")
-    obj = Program(faculty_id=payload.faculty_id, name=payload.name, code=payload.code)
+    obj = Program(
+        name=payload.name,
+        code=payload.code,
+        faculty_id=payload.faculty_id,
+        duration_years=payload.duration_years,  # new
+    )
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -57,20 +62,24 @@ def create_program(payload: ProgramCreate, db: Session = Depends(db_session)):
 def update_program(program_id: int, payload: ProgramUpdate, db: Session = Depends(db_session)):
     obj = db.get(Program, program_id)
     if not obj:
-        raise HTTPException(status_code=404, detail="Program not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
 
-    if payload.code and payload.code != obj.code:
-        if db.query(Program).filter(Program.code == payload.code).first():
+    data = payload.dict(exclude_unset=True)
+    if "code" in data and data["code"] != obj.code:
+        if db.query(Program).filter(Program.code == data["code"]).first():
             raise HTTPException(status_code=400, detail="Program code already exists")
-        obj.code = payload.code
+        obj.code = data["code"]
 
-    if payload.faculty_id is not None:
-        if not db.get(Faculty, payload.faculty_id):
+    if "faculty_id" in data:
+        if not db.get(Faculty, data["faculty_id"]):
             raise HTTPException(status_code=400, detail="Faculty not found")
-        obj.faculty_id = payload.faculty_id
+        obj.faculty_id = data["faculty_id"]
 
-    if payload.name is not None:
-        obj.name = payload.name
+    if "name" in data:
+        obj.name = data["name"]
+
+    if "duration_years" in data:
+        obj.duration_years = data["duration_years"]
 
     db.add(obj)
     db.commit()
