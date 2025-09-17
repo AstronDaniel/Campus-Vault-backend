@@ -59,6 +59,12 @@ def admin_update_user(user_id: int, payload: UserUpdate, db: Session = Depends(d
     if payload.avatar_url is not None:
         user.avatar_url = payload.avatar_url
 
+    # --- FIX: allow admin to update role ---
+    # Accept role in request body if present (for admin use)
+    role = getattr(payload, "role", None)
+    if role is not None:
+        user.role = role
+
     db.add(user)
     db.commit()
     db.refresh(user)
