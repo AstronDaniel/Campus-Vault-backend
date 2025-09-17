@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.program import Program
-from app.schemas.user import UserRead, UserUpdate, AdminPasswordReset, UsersBulkDeleteRequest, UsersBulkDeleteResponse, AdminVerifyUserRequest
+from app.schemas.user import UserRead, UserUpdate, AdminPasswordReset, UsersBulkDeleteRequest, UsersBulkDeleteResponse, AdminVerifyUserRequest, UserCreate
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 settings = get_settings()
@@ -121,7 +121,35 @@ def bulk_delete_users(payload: UsersBulkDeleteRequest, db: Session = Depends(db_
     return UsersBulkDeleteResponse(deleted=deleted, not_found=not_found)
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+def admin_create_user(payload: UserCreate, db: Session = Depends(db_session)):
+    # Check unique email/username
+    if db.query(User).filter(User.email == payload.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if db.query(User).filter(User.username == payload.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Validate program exists and belongs to the provided faculty
+    program = db.get(Program, payload.program_id)
+    if not program:
+        raise HTTPException(status_code=400, detail="Program not found")
+    if program.faculty_id != payload.faculty_id:
+        raise HTTPException(status_code=400, detail="Program does not belong to the specified faculty")
+
+    user = User(
+        email=payload.email,
+        username=payload.username,
+        hashed_password=get_password_hash(payload.password),
+        faculty_id=payload.faculty_id,
+        program_id=payload.program_id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.delete("/{user_id}", response_model=dict, status_code=status.HTTP_200_OK, dependencies=[Depends(require_api_key)])
 def delete_user(user_id: int, db: Session = Depends(db_session)):
     user = db.get(User, user_id)
     if not user:
@@ -144,4 +172,4 @@ def delete_user(user_id: int, db: Session = Depends(db_session)):
 
     db.delete(user)
     db.commit()
-    return
+    return {"message": "User deleted successfully"}
