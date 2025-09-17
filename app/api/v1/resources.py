@@ -103,9 +103,10 @@ async def upload_resource(
         description=f"Uploaded resource: {resource.title}",
         details={
             "resource_id": resource.id,
-            "resource_type": resource.resource_type,
-            "file_size": resource.file_size,
-            "course_unit_id": resource.course_unit_id
+            "course_unit_id": resource.course_unit_id,
+            "filename": resource.filename,
+            "size_bytes": resource.size_bytes,
+            "content_type": resource.content_type,
         }
     )
 
