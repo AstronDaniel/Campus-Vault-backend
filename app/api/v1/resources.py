@@ -53,7 +53,11 @@ async def upload_resource(
     digest = h.hexdigest()
 
     # Check duplicate within same course unit
-    existing = db.query(Resource).filter(Resource.course_unit_id == course_unit_id, Resource.sha256 == digest).first()
+    # existing = db.query(Resource).filter(Resource.course_unit_id == course_unit_id, Resource.sha256 == digest).first()
+    #check if the same file (by sha256) already exists in any course unit
+    # if so, we can link to the same storage_path and url to save space
+    existing = db.query(Resource).filter(Resource.sha256 == digest).first()
+
     if existing:
         # Return 409 with existing resource info
         raise HTTPException(status_code=409, detail={
