@@ -270,8 +270,8 @@ def download_resource(resource_id: int, db: Session = Depends(db_session), user:
         description=f"Downloaded resource: {r.title}",
         details={
             "resource_id": r.id,
-            "resource_type": r.resource_type,
-            "file_size": r.file_size
+            "content_type": r.content_type,
+            "size_bytes": r.size_bytes
         }
     )
 
