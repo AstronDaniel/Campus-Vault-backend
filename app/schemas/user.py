@@ -34,7 +34,8 @@ class UserUpdate(BaseModel):
     faculty_id: Optional[int] = None
     program_id: Optional[int] = None
     avatar_url: Optional[str] = None
-    # Note: role is NOT included here for regular users
+    role: Optional[UserRole] = None
+   
 
 
 class PasswordUpdate(BaseModel):

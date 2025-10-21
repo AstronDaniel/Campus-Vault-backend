@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import db_session, require_api_key
@@ -8,6 +8,10 @@ from app.services.activity_service import ActivityService
 from app.models.activity import ActivityType
 
 router = APIRouter(prefix="/api/v1/faculties", tags=["Faculties"])
+
+# Safe fallbacks for missing enum members
+SAFE_UPDATED = getattr(ActivityType, "FACULTY_UPDATED", getattr(ActivityType, "FACULTY_CREATED", "FACULTY_UPDATED"))
+SAFE_DELETED = getattr(ActivityType, "FACULTY_DELETED", getattr(ActivityType, "FACULTY_CREATED", "FACULTY_DELETED"))
 
 
 @router.get("/", response_model=list[FacultyRead])
@@ -55,36 +59,53 @@ async def update_faculty(
 ):
     fac = db.get(Faculty, faculty_id)
     if not fac:
-        raise HTTPException(status_code=404, detail="Faculty not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculty not found")
 
-    if payload.code and payload.code != fac.code:
-        if db.query(Faculty).filter(Faculty.code == payload.code).first():
+    data = payload.dict(exclude_unset=True)
+    # Validate unique code if changed
+    if "code" in data and data["code"] != fac.code:
+        if db.query(Faculty).filter(Faculty.code == data["code"], Faculty.id != faculty_id).first():
             raise HTTPException(status_code=400, detail="Faculty code already exists")
-        fac.code = payload.code
-    if payload.name is not None:
-        fac.name = payload.name
+        fac.code = data["code"]
+    if "name" in data:
+        fac.name = data["name"]
 
     db.add(fac)
     db.commit()
     db.refresh(fac)
 
-    # After successful update, log the activity
     ActivityService.log_activity(
         db=db,
-        user_id=1,  # This should be the current user's ID
-        activity_type=ActivityType.FACULTY_UPDATED,
+        user_id=1,  # TODO: replace with current user ID
+        activity_type=SAFE_UPDATED,
         description=f"Updated faculty: {fac.name}",
-        details={"faculty_id": faculty_id}
+        details={"faculty_id": fac.id, "changes": data}
     )
 
     return fac
 
 
 @router.delete("/{faculty_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
-def delete_faculty(faculty_id: int, db: Session = Depends(db_session)):
+async def delete_faculty(
+    faculty_id: int,
+    db: Session = Depends(db_session)
+):
     fac = db.get(Faculty, faculty_id)
     if not fac:
-        raise HTTPException(status_code=404, detail="Faculty not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculty not found")
+
+    # Keep details for audit before deleting
+    details = {"faculty_id": fac.id, "faculty_code": fac.code, "faculty_name": fac.name}
+
     db.delete(fac)
     db.commit()
-    return
+
+    ActivityService.log_activity(
+        db=db,
+        user_id=1,  # TODO: replace with current user ID
+        activity_type=SAFE_DELETED,
+        description=f"Deleted faculty: {details['faculty_name']}",
+        details=details
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

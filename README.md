@@ -271,8 +271,11 @@ Search
 - GET /api/v1/search?q=...&tags=...&faculty_id=...&program_id=...&year=...&semester=...
 
 Admin
-- GET    /api/v1/admin/users – requires X-API-Key
-- GET    /api/v1/admin/analytics – requires X-API-Key
+- POST /api/v1/admin/login – admin-only login (requires user role = admin)
+- GET    /api/v1/admin/stats – requires X-API-Key
+- GET    /api/v1/admin/downloads/daily – requires X-API-Key
+- PATCH  /api/v1/admin/users/{user_id}/role – admin-only (JWT)
+- GET    /api/v1/admin/users – admin-only (JWT)
 
 System
 - GET /health

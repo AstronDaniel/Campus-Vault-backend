@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime, timedelta
+from sqlalchemy import func
+from fastapi import status
 
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -13,6 +15,8 @@ from app.api.deps import db_session, get_current_user
 from app.core.config import get_settings
 from app.services.activity_service import ActivityService
 from app.models.activity import ActivityType
+from app.core.security import verify_password, create_access_token, create_refresh_token
+from app.schemas.auth import LoginRequest, TokenResponse
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 settings = get_settings()
@@ -21,6 +25,33 @@ settings = get_settings()
 def _require_api_key(x_api_key: str | None) -> None:
     if not settings.API_KEY or x_api_key != settings.API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API key")
+
+
+@router.post("/login", response_model=TokenResponse)
+def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
+    """
+    Admin-only login. Verifies credentials and requires role=ADMIN.
+    Returns standard TokenResponse upon success.
+    """
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    access = create_access_token(subject=str(user.id))
+    refresh = create_refresh_token(subject=str(user.id))
+
+    # Log admin login activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.USER_LOGIN,
+        description=f"Admin {user.username} logged in",
+        details={"email": user.email, "login_time": datetime.utcnow().isoformat(), "role": "admin"}
+    )
+
+    return TokenResponse(access_token=access, refresh_token=refresh, expires_in=60 * 30)
 
 
 @router.get("/stats")
