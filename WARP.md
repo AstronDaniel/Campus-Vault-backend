@@ -125,3 +125,4 @@ This is an early-stage project with:
 - Swagger UI available at `/docs` for API testing
 - Designed for strict validation using Pydantic schemas
 - Redis integration planned for rate limiting and caching
+ 
