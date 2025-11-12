@@ -117,6 +117,29 @@ def password_reset_request(payload: PasswordResetRequest, db: Session = Depends(
     return
 
 
+@router.post("/password/reset/validate-token")
+def validate_reset_token(payload: dict, db: Session = Depends(db_session)):
+    """Validate a password reset token without consuming it"""
+    token = payload.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required")
+    
+    try:
+        data = decode_token(token, expected_type="password_reset")
+        sub = data.get("sub")
+        if sub is None:
+            raise ValueError("missing sub")
+        user_id = int(sub)
+        
+        user = db.get(User, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        return {"valid": True, "email": user.email}
+    except Exception:
+        return {"valid": False, "expired": True}
+
+
 @router.post("/password/reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
 def password_reset_confirm(payload: PasswordResetConfirm, db: Session = Depends(db_session)):
     try:
