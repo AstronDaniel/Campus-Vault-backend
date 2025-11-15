@@ -161,6 +161,9 @@ def list_resources(
         q = q.filter(Resource.resource_type == resource_type)
     total = q.count()
     items = q.order_by(Resource.created_at.desc()).offset(offset).limit(limit).all()
+    # Calculate average rating for each resource
+    for item in items:
+        item.average_rating = round(item.rating_sum / item.rating_count, 2) if item.rating_count > 0 else 0.0
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
@@ -174,6 +177,14 @@ def get_resource(resource_id: int, db: Session = Depends(db_session), user: User
         ResourceBookmark.user_id == user.id,
         ResourceBookmark.resource_id == resource_id
     ).first() is not None
+    # Get user's rating for this resource
+    user_rating_obj = db.query(ResourceRating).filter(
+        ResourceRating.user_id == user.id,
+        ResourceRating.resource_id == resource_id
+    ).first()
+    r.user_rating = user_rating_obj.rating if user_rating_obj else None
+    # Calculate average rating
+    r.average_rating = round(r.rating_sum / r.rating_count, 2) if r.rating_count > 0 else 0.0
     return r
 
 
@@ -404,7 +415,7 @@ def list_comments(resource_id: int, db: Session = Depends(db_session), user: Use
     # Add username to each comment
     for comment in comments:
         comment_user = db.get(User, comment.user_id)
-        comment.username = comment_user.name if comment_user else "Unknown User"
+        comment.username = comment_user.username if comment_user else "Unknown User"
     return comments
 
 

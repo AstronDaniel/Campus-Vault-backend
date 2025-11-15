@@ -34,6 +34,8 @@ class ResourceRead(ResourceBase):
     created_at: datetime
     resource_type: Optional[str] = "notes"
     is_bookmarked: bool = False
+    user_rating: int | None = None
+    average_rating: float = 0.0
 
     class Config:
         from_attributes = True
