@@ -17,6 +17,7 @@ class Resource(Base):
 
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True, default="notes")  # 'notes', 'past_paper', 'assignment', etc.
 
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)

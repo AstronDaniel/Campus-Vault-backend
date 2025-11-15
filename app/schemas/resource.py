@@ -7,6 +7,7 @@ class ResourceBase(BaseModel):
     course_unit_id: int
     title: Optional[str] = Field(default=None, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
+    resource_type: Optional[str] = Field(default="notes", max_length=50)  # 'notes', 'past_paper', 'assignment', etc.
 
 
 class ResourceCreate(ResourceBase):
@@ -31,6 +32,7 @@ class ResourceRead(ResourceBase):
     rating_sum: int
     rating_count: int
     created_at: datetime
+    resource_type: Optional[str] = "notes"
 
     class Config:
         from_attributes = True
@@ -57,6 +59,7 @@ class ResourceDuplicateInfo(BaseModel):
 class ResourceUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
+    resource_type: Optional[str] = Field(default=None, max_length=50)
 
 
 class ResourceLinkRequest(BaseModel):
