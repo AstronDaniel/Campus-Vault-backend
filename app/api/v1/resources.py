@@ -169,6 +169,11 @@ def get_resource(resource_id: int, db: Session = Depends(db_session), user: User
     r = db.get(Resource, resource_id)
     if not r:
         raise HTTPException(status_code=404, detail="Resource not found")
+    # Check if user has bookmarked this resource
+    r.is_bookmarked = db.query(ResourceBookmark).filter(
+        ResourceBookmark.user_id == user.id,
+        ResourceBookmark.resource_id == resource_id
+    ).first() is not None
     return r
 
 
@@ -390,12 +395,17 @@ def search_resources(
 
 @router.get("/{resource_id}/comments", response_model=list[CommentRead])
 def list_comments(resource_id: int, db: Session = Depends(db_session), user: User = Depends(get_current_user)):
-    return (
+    comments = (
         db.query(ResourceComment)
         .filter(ResourceComment.resource_id == resource_id)
         .order_by(ResourceComment.created_at.desc())
         .all()
     )
+    # Add username to each comment
+    for comment in comments:
+        comment_user = db.get(User, comment.user_id)
+        comment.username = comment_user.name if comment_user else "Unknown User"
+    return comments
 
 
 @router.post("/{resource_id}/rating", response_model=ResourceRead)

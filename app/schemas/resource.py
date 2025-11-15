@@ -33,6 +33,7 @@ class ResourceRead(ResourceBase):
     rating_count: int
     created_at: datetime
     resource_type: Optional[str] = "notes"
+    is_bookmarked: bool = False
 
     class Config:
         from_attributes = True
@@ -87,6 +88,7 @@ class CommentRead(BaseModel):
     user_id: int
     body: str
     created_at: datetime
+    username: str | None = None
 
     class Config:
         from_attributes = True
