@@ -36,7 +36,7 @@ def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    if user.role != UserRole.ADMIN:
+    if user.role != UserRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     access = create_access_token(subject=str(user.id))
@@ -46,7 +46,7 @@ def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.USER_LOGIN,
+        activity_type=ActivityType.user_login,
         description=f"Admin {user.username} logged in",
         details={"email": user.email, "login_time": datetime.utcnow().isoformat(), "role": "admin"}
     )
@@ -118,7 +118,7 @@ async def update_user_role(
 ):
     """Admin only: Update user role"""
     # Check if current user is admin
-    if current_user.role != UserRole.ADMIN:
+    if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Get user info before update for logging
@@ -135,7 +135,7 @@ async def update_user_role(
     ActivityService.log_activity(
         db=db,
         user_id=current_user.id,
-        activity_type=ActivityType.USER_ROLE_CHANGED,
+        activity_type=ActivityType.user_role_changed,
         description=f"Changed user {target_user.username} role from {old_role.value} to {role_update.role.value}",
         details={
             "target_user_id": user_id,
@@ -156,7 +156,7 @@ async def get_all_users(
     current_user: User = Depends(get_current_user)
 ):
     """Admin only: Get all users"""
-    if current_user.role != UserRole.ADMIN:
+    if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admin access required")
 
     users = UserService.get_all_users(db, skip=skip, limit=limit)

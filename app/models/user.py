@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from app.models.activity import Activity
 
 
-class UserRole(enum.Enum):
-    STUDENT = "student"
-    ADMIN = "admin"
+class UserRole(str, enum.Enum):
+    student = "student"
+    admin = "admin"
 
 
 class User(Base):
@@ -28,7 +28,7 @@ class User(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.STUDENT, nullable=False, server_default="student")
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.student, nullable=False, server_default="student")
 
     # Relationships
     activities: Mapped[list["Activity"]] = relationship("Activity", back_populates="user")

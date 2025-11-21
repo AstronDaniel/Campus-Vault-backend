@@ -9,7 +9,7 @@ class ActivityLogger:
         return ActivityService.log_activity(
             db=db,
             user_id=user_id,
-            activity_type=ActivityType.USER_LOGIN,
+            activity_type=ActivityType.user_login,
             description="User logged in",
             details=details
         )
@@ -19,7 +19,7 @@ class ActivityLogger:
         return ActivityService.log_activity(
             db=db,
             user_id=user_id,
-            activity_type=ActivityType.USER_LOGOUT,
+            activity_type=ActivityType.user_logout,
             description="User logged out",
             details=details
         )
@@ -29,7 +29,7 @@ class ActivityLogger:
         return ActivityService.log_activity(
             db=db,
             user_id=user_id,
-            activity_type=ActivityType.RESOURCE_UPLOADED,
+            activity_type=ActivityType.resource_uploaded,
             description=f"Uploaded resource: {resource_name}",
             details=details
         )
@@ -39,7 +39,7 @@ class ActivityLogger:
         return ActivityService.log_activity(
             db=db,
             user_id=user_id,
-            activity_type=ActivityType.RESOURCE_DOWNLOADED,
+            activity_type=ActivityType.resource_downloaded,
             description=f"Downloaded resource: {resource_name}",
             details=details
         )
@@ -49,7 +49,7 @@ class ActivityLogger:
         return ActivityService.log_activity(
             db=db,
             user_id=user_id,
-            activity_type=ActivityType.USER_REGISTERED,
+            activity_type=ActivityType.user_registered,
             description="New user registered",
             details=details
         )

@@ -10,8 +10,8 @@ from app.models.activity import ActivityType
 router = APIRouter(prefix="/api/v1/faculties", tags=["Faculties"])
 
 # Safe fallbacks for missing enum members
-SAFE_UPDATED = getattr(ActivityType, "FACULTY_UPDATED", getattr(ActivityType, "FACULTY_CREATED", "FACULTY_UPDATED"))
-SAFE_DELETED = getattr(ActivityType, "FACULTY_DELETED", getattr(ActivityType, "FACULTY_CREATED", "FACULTY_DELETED"))
+SAFE_UPDATED = getattr(ActivityType, "faculty_updated", getattr(ActivityType, "faculty_created", "faculty_updated"))
+SAFE_DELETED = getattr(ActivityType, "faculty_deleted", getattr(ActivityType, "faculty_created", "faculty_deleted"))
 
 
 @router.get("/", response_model=list[FacultyRead])
@@ -43,7 +43,7 @@ async def create_faculty(
     ActivityService.log_activity(
         db=db,
         user_id=1,  # This should be the current user's ID
-        activity_type=ActivityType.FACULTY_CREATED,
+        activity_type=ActivityType.faculty_created,
         description=f"Created faculty: {fac.name}",
         details={"faculty_id": fac.id, "faculty_code": fac.code}
     )
