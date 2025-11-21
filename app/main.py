@@ -93,6 +93,11 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/")
+async def root():
+    return {"message": "Welcome to CampusVault API", "docs": "/docs"}
+
+
 @app.on_event("startup")
 def on_startup():
     # Temporary: auto-create tables for initial bring-up. Use Alembic later.

@@ -11,7 +11,7 @@ from app.schemas.course_unit import CourseUnitRead
 router = APIRouter(prefix="/api/v1/programs", tags=["Programs"])
 
 
-@router.get("/", response_model=list[ProgramRead])
+@router.get("", response_model=list[ProgramRead])
 def list_programs(faculty_id: int | None = None, db: Session = Depends(db_session)):
     q = db.query(Program)
     if faculty_id is not None:
@@ -42,7 +42,7 @@ def list_program_course_units(
     return q.order_by(CourseUnit.year, CourseUnit.semester, CourseUnit.name).all()
 
 
-@router.post("/", response_model=ProgramRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post("", response_model=ProgramRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
 def create_program(payload: ProgramCreate, db: Session = Depends(db_session)):
     if db.query(Program).filter(Program.code == payload.code).first():
         raise HTTPException(status_code=400, detail="Program code already exists")

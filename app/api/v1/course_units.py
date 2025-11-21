@@ -9,7 +9,7 @@ from app.schemas.course_unit import CourseUnitCreate, CourseUnitRead, CourseUnit
 router = APIRouter(prefix="/api/v1/course-units", tags=["Course Units"])
 
 
-@router.get("/", response_model=list[CourseUnitRead])
+@router.get("", response_model=list[CourseUnitRead])
 def list_course_units(
     program_id: int | None = None,
     year: int | None = None,
@@ -34,7 +34,7 @@ def get_course_unit(course_unit_id: int, db: Session = Depends(db_session)):
     return obj
 
 
-@router.post("/", response_model=CourseUnitRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post("", response_model=CourseUnitRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
 def create_course_unit(payload: CourseUnitCreate, db: Session = Depends(db_session)):
     # Optional: enforce unique (program_id, code) pair
     exists = (

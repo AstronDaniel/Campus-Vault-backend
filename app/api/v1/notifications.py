@@ -12,7 +12,7 @@ from app.schemas.notification import NotificationCreate, NotificationRead, Notif
 router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 
 
-@router.get("/", response_model=list[NotificationRead])
+@router.get("", response_model=list[NotificationRead])
 def list_notifications(
     only_unread: bool = Query(False),
     limit: int = Query(50, ge=1, le=100),

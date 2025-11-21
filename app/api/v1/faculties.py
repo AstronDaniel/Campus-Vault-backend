@@ -14,7 +14,7 @@ SAFE_UPDATED = getattr(ActivityType, "faculty_updated", getattr(ActivityType, "f
 SAFE_DELETED = getattr(ActivityType, "FACULTY_DELETED", getattr(ActivityType, "faculty_created", "FACULTY_DELETED"))
 
 
-@router.get("/", response_model=list[FacultyRead])
+@router.get("", response_model=list[FacultyRead])
 def list_faculties(db: Session = Depends(db_session)):
     return db.query(Faculty).order_by(Faculty.name).all()
 
@@ -27,7 +27,7 @@ def get_faculty(faculty_id: int, db: Session = Depends(db_session)):
     return fac
 
 
-@router.post("/", response_model=FacultyRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post("", response_model=FacultyRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
 async def create_faculty(
     payload: FacultyCreate,
     db: Session = Depends(db_session)

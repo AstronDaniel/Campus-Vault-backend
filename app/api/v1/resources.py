@@ -141,7 +141,7 @@ async def check_duplicate(
     return ResourceDuplicateInfo(duplicate=False, existing=None)
 
 
-@router.get("/", response_model=ResourceListResponse)
+@router.get("", response_model=ResourceListResponse)
 def list_resources(
     course_unit_id: int | None = None,
     uploader_id: int | None = None,

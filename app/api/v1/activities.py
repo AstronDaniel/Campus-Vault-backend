@@ -23,7 +23,7 @@ class ActivityResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@router.get("/", response_model=List[ActivityResponse])
+@router.get("", response_model=List[ActivityResponse])
 async def get_activities(
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
     limit: int = Query(50, ge=1, le=100, description="Number of activities to return"),

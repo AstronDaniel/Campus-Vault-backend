@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 settings = get_settings()
 
 
-@router.get("/", response_model=list[UserRead], dependencies=[Depends(require_api_key)])
+@router.get("", response_model=list[UserRead], dependencies=[Depends(require_api_key)])
 def list_users(db: Session = Depends(db_session)):
     return db.query(User).order_by(User.created_at.desc()).all()
 
@@ -127,7 +127,7 @@ def bulk_delete_users(payload: UsersBulkDeleteRequest, db: Session = Depends(db_
     return UsersBulkDeleteResponse(deleted=deleted, not_found=not_found)
 
 
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
 def admin_create_user(payload: UserCreate, db: Session = Depends(db_session)):
     # Check unique email/username
     if db.query(User).filter(User.email == payload.email).first():
