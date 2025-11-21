@@ -62,7 +62,7 @@ def register(payload: UserCreate, db: Session = Depends(db_session)):
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.USER_REGISTERED,
+        activity_type=ActivityType.user_registered,
         description=f"New user {user.username} registered",
         details={"email": user.email, "faculty_id": user.faculty_id, "program_id": user.program_id}
     )
@@ -83,7 +83,7 @@ def login(payload: LoginRequest, db: Session = Depends(db_session)):
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.USER_LOGIN,
+        activity_type=ActivityType.user_login,
         description=f"User {user.username} logged in",
         details={"email": user.email, "login_time": datetime.utcnow().isoformat()}
     )
@@ -265,7 +265,7 @@ def logout(
     ActivityService.log_activity(
         db=db,
         user_id=current_user.id,
-        activity_type=ActivityType.USER_LOGOUT,
+        activity_type=ActivityType.user_logout,
         description=f"User {current_user.username} logged out",
         details={"logout_time": datetime.utcnow().isoformat()}
     )

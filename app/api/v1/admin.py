@@ -46,7 +46,7 @@ def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.USER_LOGIN,
+        activity_type=ActivityType.user_login,
         description=f"Admin {user.username} logged in",
         details={"email": user.email, "login_time": datetime.utcnow().isoformat(), "role": "admin"}
     )
@@ -135,7 +135,7 @@ async def update_user_role(
     ActivityService.log_activity(
         db=db,
         user_id=current_user.id,
-        activity_type=ActivityType.USER_ROLE_CHANGED,
+        activity_type=ActivityType.user_role_changed,
         description=f"Changed user {target_user.username} role from {old_role.value} to {role_update.role.value}",
         details={
             "target_user_id": user_id,

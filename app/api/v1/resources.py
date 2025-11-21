@@ -105,7 +105,7 @@ async def upload_resource(
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.RESOURCE_UPLOADED,
+        activity_type=ActivityType.resource_uploaded,
         description=f"Uploaded resource: {resource.title}",
         details={
             "resource_id": resource.id,
@@ -240,7 +240,7 @@ def delete_resource(
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.RESOURCE_DELETED,
+        activity_type=ActivityType.resource_deleted,
         description=f"Deleted resource: {r.title}",
         details={"resource_id": resource_id}
     )
@@ -290,7 +290,7 @@ def download_resource(resource_id: int, db: Session = Depends(db_session), user:
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.RESOURCE_DOWNLOADED,
+        activity_type=ActivityType.resource_downloaded,
         description=f"Downloaded resource: {r.title}",
         details={
             "resource_id": r.id,
