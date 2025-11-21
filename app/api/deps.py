@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.core.security import decode_token
 from app.database import get_db
 from app.models.user import User, UserRole
+from app.core.context import user_id_context
 
 
 _settings = get_settings()
@@ -33,6 +34,10 @@ def get_current_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    
+    # Set the user ID in the context variable for activity logging
+    user_id_context.set(user.id)
+    
     return cast(User, user)
 
 

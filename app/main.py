@@ -19,6 +19,7 @@ from app.api.v1 import activities as activities_router
 from app.core.config import get_settings
 from app.database import Base, engine
 import app.models as _models  # noqa: F401  # Ensure models are imported for SQLAlchemy
+import app.core.activity_listener  # noqa: F401 # Register activity listeners
 
 
 settings = get_settings()
