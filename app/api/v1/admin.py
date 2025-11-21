@@ -30,7 +30,7 @@ def _require_api_key(x_api_key: str | None) -> None:
 @router.post("/login", response_model=TokenResponse)
 def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
     """
-    Admin-only login. Verifies credentials and requires role=ADMIN.
+    Admin-only login. Verifies credentials and requires role=admin.
     Returns standard TokenResponse upon success.
     """
     user = db.query(User).filter(User.email == payload.email).first()
@@ -46,7 +46,7 @@ def admin_login(payload: LoginRequest, db: Session = Depends(db_session)):
     ActivityService.log_activity(
         db=db,
         user_id=user.id,
-        activity_type=ActivityType.user_login,
+        activity_type=ActivityType.USER_LOGIN,
         description=f"Admin {user.username} logged in",
         details={"email": user.email, "login_time": datetime.utcnow().isoformat(), "role": "admin"}
     )
@@ -135,7 +135,7 @@ async def update_user_role(
     ActivityService.log_activity(
         db=db,
         user_id=current_user.id,
-        activity_type=ActivityType.user_role_changed,
+        activity_type=ActivityType.USER_ROLE_CHANGED,
         description=f"Changed user {target_user.username} role from {old_role.value} to {role_update.role.value}",
         details={
             "target_user_id": user_id,

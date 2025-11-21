@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from app.models.activity import Activity
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.Enum):
     student = "student"
     admin = "admin"
 
