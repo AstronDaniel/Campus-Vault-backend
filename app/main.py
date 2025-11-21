@@ -96,4 +96,5 @@ async def health():
 @app.on_event("startup")
 def on_startup():
     # Temporary: auto-create tables for initial bring-up. Use Alembic later.
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)
+    pass
