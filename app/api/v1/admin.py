@@ -14,7 +14,7 @@ from app.services.user_service import UserService
 from app.api.deps import db_session, get_current_user
 from app.core.config import get_settings
 from app.services.activity_service import ActivityService
-from app.models.activity import ActivityType
+from app.models.activity import ActivityType, Activity
 from app.core.security import verify_password, create_access_token, create_refresh_token
 from app.schemas.auth import LoginRequest, TokenResponse
 
@@ -61,11 +61,15 @@ def stats(x_api_key: str | None = Header(None, alias="X-API-Key"), db: Session =
     users = db.query(func.count(User.id)).scalar() or 0
     resources = db.query(func.count(Resource.id)).scalar() or 0
     downloads = db.query(func.count(ResourceDownloadEvent.id)).scalar() or 0
+    
+    since_24h = datetime.utcnow() - timedelta(hours=24)
+    active_users_today = db.query(func.count(func.distinct(Activity.user_id))).filter(Activity.created_at >= since_24h).scalar() or 0
 
     return {
-        "users": users,
-        "resources": resources,
-        "downloads": downloads,
+        "total_users": users,
+        "total_resources": resources,
+        "total_downloads": downloads,
+        "active_users_today": active_users_today,
     }
 
 
