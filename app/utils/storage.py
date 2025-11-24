@@ -83,10 +83,8 @@ class GoogleDriveStorage(StorageBase):
         oauth_client_id: str | None = None,
         oauth_client_secret: str | None = None,
         oauth_refresh_token: str | None = None,
-        service_account_json_content: str | None = None,
     ):
         self.service_account_json_path = service_account_json_path
-        self.service_account_json_content = service_account_json_content
         self.parent_folder_id = parent_folder_id
         self.public_read = public_read
         self.oauth_client_id = oauth_client_id
@@ -120,14 +118,6 @@ class GoogleDriveStorage(StorageBase):
                 )
             except Exception as e:  # pragma: no cover
                 raise RuntimeError("Failed to initialize OAuth credentials for Google Drive") from e
-        elif self.service_account_json_content:
-            try:
-                import json
-                from google.oauth2 import service_account
-                info = json.loads(self.service_account_json_content)
-                creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
-            except Exception as e:
-                raise RuntimeError("Failed to initialize Service Account credentials from JSON content") from e
         elif self.service_account_json_path:
             try:
                 from google.oauth2 import service_account
@@ -223,6 +213,5 @@ def get_storage() -> StorageBase:
             oauth_client_id=settings.GDRIVE_CLIENT_ID,
             oauth_client_secret=settings.GDRIVE_CLIENT_SECRET,
             oauth_refresh_token=settings.GDRIVE_REFRESH_TOKEN,
-            service_account_json_content=settings.GDRIVE_SERVICE_ACCOUNT_JSON_CONTENT,
         )
     return LocalStorage(settings.FILE_STORAGE_DIR)
