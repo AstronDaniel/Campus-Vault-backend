@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # Storage
     DRIVE_PROVIDER: str = "local"  # local|gdrive|onedrive
-    FILE_STORAGE_DIR: str
+    FILE_STORAGE_DIR: str | None = None # drive provider is set in production 
 
     # Google Drive
     GDRIVE_CLIENT_ID: Optional[str] = None
