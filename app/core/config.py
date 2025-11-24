@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     GDRIVE_CLIENT_SECRET: Optional[str] = None
     GDRIVE_REFRESH_TOKEN: Optional[str] = None
     GDRIVE_SERVICE_ACCOUNT_JSON_PATH: Optional[str] = None
+    GDRIVE_SERVICE_ACCOUNT_JSON_CONTENT: Optional[str] = None
     GDRIVE_PARENT_FOLDER_ID: Optional[str] = None
     GDRIVE_PUBLIC_READ: bool = False
 
