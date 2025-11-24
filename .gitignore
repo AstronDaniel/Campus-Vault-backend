@@ -75,3 +75,4 @@ files/
 *.json
 scripts/
 note.md
+!vercel.json
