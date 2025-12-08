@@ -26,6 +26,18 @@ settings = get_settings()
 
 app = FastAPI(title="CampusVault API", version="0.1.0")
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    print(f"Headers: {request.headers}")
+    try:
+        response = await call_next(request)
+        print(f"Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        print(f"Request failed: {str(e)}")
+        raise
+
 # CORS
 app.add_middleware(
     CORSMiddleware,

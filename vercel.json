@@ -8,24 +8,6 @@
     ],
     "routes": [
         {
-            "src": "/api/v1/resources/(.*)",
-            "methods": ["OPTIONS"],
-            "dest": "app/main.py",
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Max-Age": "86400"
-            }
-        },
-        {
-            "src": "/api/v1/resources/(.*)",
-            "dest": "app/main.py",
-            "headers": {
-                "Access-Control-Allow-Origin": "*"
-            }
-        },
-        {
             "src": "/(.*)",
             "dest": "app/main.py"
         }
