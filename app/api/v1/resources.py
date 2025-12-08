@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Header, Query, Body
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
 from hashlib import sha256 as _sha256
 from pathlib import Path
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
+import base64
 
 from app.api.deps import db_session, get_current_user
 from app.core.config import get_settings
@@ -26,6 +29,128 @@ from app.models.activity import ActivityType
 
 router = APIRouter(prefix="/api/v1/resources", tags=["Resources"])
 settings = get_settings()
+
+
+# Pydantic model for mobile upload (JSON-based instead of multipart)
+class MobileUploadRequest(BaseModel):
+    course_unit_id: int
+    filename: str
+    content_type: str
+    file_base64: str  # Base64 encoded file content
+    title: Optional[str] = None
+    description: Optional[str] = None
+    resource_type: str = "notes"
+
+
+# Simple endpoint for mobile to test auth is working before attempting upload
+@router.get("/mobile/ping")
+async def mobile_ping(user: User = Depends(get_current_user)):
+    """Simple endpoint for mobile clients to verify auth works. Returns user info."""
+    return {
+        "status": "ok",
+        "user_id": user.id,
+        "username": user.username,
+        "message": "Auth is working! You can upload."
+    }
+
+
+# Mobile-friendly upload using JSON with base64-encoded file (avoids multipart issues on Vercel)
+@router.post("/mobile/upload", response_model=ResourceRead, status_code=status.HTTP_201_CREATED)
+async def mobile_upload_resource(
+    payload: MobileUploadRequest,
+    db: Session = Depends(db_session),
+    user: User = Depends(get_current_user),
+):
+    """
+    Mobile-friendly upload endpoint that accepts JSON with base64-encoded file.
+    This avoids multipart/form-data issues that can occur with some cloud providers.
+    """
+    # Validate course unit exists
+    if not db.get(CourseUnit, payload.course_unit_id):
+        raise HTTPException(status_code=400, detail="Course unit not found")
+    
+    # Decode base64 content
+    try:
+        content = base64.b64decode(payload.file_base64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid base64 file content")
+    
+    # Basic size check
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(status_code=400, detail="File too large")
+    
+    # Compute SHA256 for deduplication
+    h = _sha256()
+    h.update(content)
+    digest = h.hexdigest()
+    
+    # Check for duplicate
+    existing = db.query(Resource).filter(Resource.sha256 == digest).first()
+    if existing:
+        raise HTTPException(status_code=409, detail={
+            "message": "Duplicate content detected",
+            "resource": {
+                "id": existing.id,
+                "course_unit_id": existing.course_unit_id,
+                "uploader_id": existing.uploader_id,
+                "title": existing.title,
+                "description": existing.description,
+                "filename": existing.filename,
+                "content_type": existing.content_type,
+                "size_bytes": existing.size_bytes,
+                "sha256": existing.sha256,
+                "storage_path": existing.storage_path,
+                "url": existing.url,
+                "created_at": existing.created_at.isoformat(),
+            }
+        })
+    
+    # Save using storage backend
+    content_type = payload.content_type.lower()
+    storage = get_storage()
+    storage_path, url = storage.save_resource(
+        course_unit_id=payload.course_unit_id,
+        digest=digest,
+        filename=payload.filename,
+        content_type=content_type,
+        content=content
+    )
+    
+    resource = Resource(
+        course_unit_id=payload.course_unit_id,
+        uploader_id=user.id,
+        title=payload.title,
+        description=payload.description,
+        resource_type=payload.resource_type,
+        filename=payload.filename,
+        content_type=content_type,
+        size_bytes=len(content),
+        sha256=digest,
+        storage_path=storage_path,
+        url=url,
+    )
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
+    
+    # Log activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.resource_uploaded,
+        description=f"Uploaded resource: {resource.title}",
+        details={
+            "resource_id": resource.id,
+            "course_unit_id": resource.course_unit_id,
+            "filename": resource.filename,
+            "size_bytes": resource.size_bytes,
+            "content_type": resource.content_type,
+            "upload_method": "mobile_base64"
+        }
+    )
+    
+    return resource
 
 
 @router.post("/upload", response_model=ResourceRead, status_code=status.HTTP_201_CREATED)
