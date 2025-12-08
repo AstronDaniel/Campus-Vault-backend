@@ -236,6 +236,13 @@ def get_user_stats(db: Session = Depends(db_session), user: User = Depends(get_c
     )
 
 
+@router.get("/me/resources")
+def get_my_resources(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
+    """Get all resources uploaded by the current user"""
+    resources = db.query(Resource).filter(Resource.uploader_id == user.id).order_by(Resource.created_at.desc()).all()
+    return resources
+
+
 @router.patch("/me", response_model=UserRead)
 def update_me(payload: UserUpdate, db: Session = Depends(db_session), user: User = Depends(get_current_user)):
     # If updating email or username, ensure uniqueness
