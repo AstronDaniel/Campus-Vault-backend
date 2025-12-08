@@ -91,6 +91,34 @@ def login(payload: LoginRequest, db: Session = Depends(db_session)):
     return TokenResponse(access_token=access, refresh_token=refresh, expires_in=60 * 30)
 
 
+# Mobile-specific login - returns a long-lived token (365 days) so users stay logged in
+@router.post("/login/mobile", response_model=TokenResponse)
+def login_mobile(payload: LoginRequest, db: Session = Depends(db_session)):
+    """
+    Mobile-friendly login endpoint that returns a long-lived access token.
+    Users stay logged in until they explicitly log out - no token refresh needed.
+    Token expires after 1 year of inactivity.
+    """
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    # Create a long-lived token (365 days = 525600 minutes)
+    access = create_access_token(subject=str(user.id), expires_minutes=525600)
+
+    # Log the activity
+    ActivityService.log_activity(
+        db=db,
+        user_id=user.id,
+        activity_type=ActivityType.user_login,
+        description=f"User {user.username} logged in via mobile",
+        details={"email": user.email, "login_time": datetime.utcnow().isoformat(), "platform": "mobile"}
+    )
+
+    # expires_in is in seconds (365 days)
+    return TokenResponse(access_token=access, refresh_token=None, expires_in=365 * 24 * 60 * 60)
+
+
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(payload: RefreshRequest):
     try:

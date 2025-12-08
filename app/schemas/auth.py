@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class LoginRequest(BaseModel):
@@ -12,7 +13,7 @@ class RefreshRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
+    refresh_token: Optional[str] = None  # Optional for mobile (long-lived tokens don't need refresh)
     token_type: str = "bearer"
     expires_in: int  # seconds for access token
 
