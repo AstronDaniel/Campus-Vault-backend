@@ -21,6 +21,7 @@ class UserRead(UserBase):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     is_verified: bool
     created_at: datetime
     role: UserRole  # This shows the role in responses
@@ -38,6 +39,7 @@ class UserUpdate(BaseModel):
     faculty_id: Optional[int] = None
     program_id: Optional[int] = None
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     role: Optional[UserRole] = None
    
 
@@ -74,6 +76,7 @@ class UserResponse(BaseModel):
     faculty_id: int
     program_id: int
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     is_verified: bool
     created_at: datetime
 

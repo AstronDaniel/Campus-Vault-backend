@@ -28,6 +28,7 @@ class User(Base):
     faculty_id: Mapped[int] = mapped_column(ForeignKey("faculties.id", ondelete="RESTRICT"), index=True, nullable=False)
     program_id: Mapped[int] = mapped_column(ForeignKey("programs.id", ondelete="RESTRICT"), index=True, nullable=False)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    banner_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.student, nullable=False, server_default="student")

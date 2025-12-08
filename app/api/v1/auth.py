@@ -329,6 +329,51 @@ async def upload_avatar(
     return user
 
 
+@router.post("/me/banner", response_model=UserRead)
+async def upload_banner(
+    file: UploadFile = File(...),
+    db: Session = Depends(db_session),
+    user: User = Depends(get_current_user),
+):
+    """Upload profile banner/cover image"""
+    # Validate file type (basic) and size
+    content_type = (file.content_type or "").lower()
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image uploads are allowed for banner")
+
+    content = await file.read()
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(status_code=400, detail="File too large")
+
+    # Determine extension
+    from pathlib import Path
+
+    allowed_exts = {"jpg", "jpeg", "png"}
+    filename = file.filename or "banner"
+    ext = Path(filename).suffix.lower().lstrip(".")
+    if ext not in allowed_exts:
+        # try to infer from content-type
+        if "jpeg" in content_type:
+            ext = "jpg"
+        elif "png" in content_type:
+            ext = "png"
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported image type. Use jpg or png")
+
+    # Save via storage backend (Drive or Local) - use banner subfolder
+    storage = get_storage()
+    # Create a banner-specific filename
+    banner_filename = f"banner_{user.id}.{ext}"
+    _, public_url = storage.save_avatar(user_id=user.id, filename=banner_filename, content_type=content_type, content=content)
+
+    user.banner_url = public_url
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
     current_user: User = Depends(get_current_user),
