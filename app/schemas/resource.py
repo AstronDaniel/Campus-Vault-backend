@@ -3,6 +3,16 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class CourseUnitBrief(BaseModel):
+    """Brief course unit info for embedding in resource responses."""
+    id: int
+    name: str
+    code: str
+
+    class Config:
+        from_attributes = True
+
+
 class ResourceBase(BaseModel):
     course_unit_id: int
     title: Optional[str] = Field(default=None, max_length=255)
@@ -36,6 +46,7 @@ class ResourceRead(ResourceBase):
     is_bookmarked: bool = False
     user_rating: int | None = None
     average_rating: float = 0.0
+    course_unit: Optional[CourseUnitBrief] = None
 
     class Config:
         from_attributes = True
