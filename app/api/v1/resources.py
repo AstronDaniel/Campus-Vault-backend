@@ -292,6 +292,25 @@ def list_resources(
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
+@router.get("/bookmarks", response_model=list[ResourceRead])
+def list_bookmarks(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
+    """Get all bookmarked resources for the current user."""
+    bms = (
+        db.query(ResourceBookmark)
+        .filter(ResourceBookmark.user_id == user.id)
+        .all()
+    )
+    ids = [b.resource_id for b in bms]
+    if not ids:
+        return []
+    resources = db.query(Resource).filter(Resource.id.in_(ids)).order_by(desc(Resource.created_at)).all()
+    # Mark all as bookmarked and calculate average rating
+    for r in resources:
+        r.is_bookmarked = True
+        r.average_rating = round(r.rating_sum / r.rating_count, 2) if r.rating_count > 0 else 0.0
+    return resources
+
+
 @router.get("/{resource_id}", response_model=ResourceRead)
 def get_resource(resource_id: int, db: Session = Depends(db_session), user: User = Depends(get_current_user)):
     r = db.get(Resource, resource_id)
@@ -623,17 +642,3 @@ def remove_bookmark(resource_id: int, db: Session = Depends(db_session), user: U
     db.delete(bm)
     db.commit()
     return
-
-
-@router.get("/bookmarks", response_model=list[ResourceRead])
-def list_bookmarks(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
-    bms = (
-        db.query(ResourceBookmark)
-        .filter(ResourceBookmark.user_id == user.id)
-        .all()
-    )
-    ids = [b.resource_id for b in bms]
-    if not ids:
-        return []
-    resources = db.query(Resource).filter(Resource.id.in_(ids)).order_by(desc(Resource.created_at)).all()
-    return resources
