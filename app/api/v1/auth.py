@@ -249,6 +249,12 @@ def update_me(payload: UserUpdate, db: Session = Depends(db_session), user: User
             raise HTTPException(status_code=400, detail="Username already taken")
         user.username = payload.username
 
+    # Update first_name and last_name if provided
+    if payload.first_name is not None:
+        user.first_name = payload.first_name
+    if payload.last_name is not None:
+        user.last_name = payload.last_name
+
     # If updating faculty/program, validate the mapping
     new_program_id = payload.program_id if payload.program_id is not None else user.program_id
     new_faculty_id = payload.faculty_id if payload.faculty_id is not None else user.faculty_id

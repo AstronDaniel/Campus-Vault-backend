@@ -18,6 +18,8 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     avatar_url: Optional[str] = None
     is_verified: bool
     created_at: datetime
@@ -31,6 +33,8 @@ class UserUpdate(BaseModel):
     # Partial update for profile fields (email and username optional)
     email: Optional[EmailStr] = None
     username: Optional[str] = Field(default=None, min_length=3, max_length=50)
+    first_name: Optional[str] = Field(default=None, max_length=100)
+    last_name: Optional[str] = Field(default=None, max_length=100)
     faculty_id: Optional[int] = None
     program_id: Optional[int] = None
     avatar_url: Optional[str] = None
@@ -64,6 +68,8 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     role: UserRole
     faculty_id: int
     program_id: int
@@ -88,6 +94,6 @@ class UserStats(BaseModel):
     """User statistics for profile display"""
     total_uploads: int = 0
     total_downloads: int = 0
-    bookmarks_count: int = 0
+    total_bookmarks: int = 0
     average_rating: float = 0.0
     contribution_score: int = 0
