@@ -82,3 +82,12 @@ class UserAdminUpdate(BaseModel):
     faculty_id: Optional[int] = None
     program_id: Optional[int] = None
     is_verified: Optional[bool] = None
+
+
+class UserStats(BaseModel):
+    """User statistics for profile display"""
+    total_uploads: int = 0
+    total_downloads: int = 0
+    bookmarks_count: int = 0
+    average_rating: float = 0.0
+    contribution_score: int = 0

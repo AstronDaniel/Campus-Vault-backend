@@ -14,6 +14,8 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.models.program import Program
+from app.models.resource import Resource
+from app.models.resource_bookmark import ResourceBookmark
 from app.models.activity import ActivityType
 from app.schemas.auth import (
     LoginRequest,
@@ -22,7 +24,7 @@ from app.schemas.auth import (
     PasswordResetRequest,
     PasswordResetConfirm,
 )
-from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordUpdate
+from app.schemas.user import UserCreate, UserRead, UserUpdate, PasswordUpdate, UserStats
 from app.utils.storage import get_storage
 from app.services.activity_service import ActivityService
 
@@ -195,6 +197,43 @@ def password_reset_confirm(payload: PasswordResetConfirm, db: Session = Depends(
 @router.get("/me", response_model=UserRead)
 def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get("/me/stats", response_model=UserStats)
+def get_user_stats(db: Session = Depends(db_session), user: User = Depends(get_current_user)):
+    """Get current user's contribution statistics"""
+    from sqlalchemy import func
+    
+    # Count resources uploaded by user
+    total_uploads = db.query(func.count(Resource.id)).filter(Resource.uploader_id == user.id).scalar() or 0
+    
+    # Sum total downloads across user's resources
+    total_downloads = db.query(func.coalesce(func.sum(Resource.download_count), 0)).filter(Resource.uploader_id == user.id).scalar() or 0
+    
+    # Count user's bookmarks
+    total_bookmarks = db.query(func.count(ResourceBookmark.id)).filter(ResourceBookmark.user_id == user.id).scalar() or 0
+    
+    # Calculate average rating for user's resources
+    rating_stats = db.query(
+        func.coalesce(func.sum(Resource.rating_sum), 0),
+        func.coalesce(func.sum(Resource.rating_count), 0)
+    ).filter(Resource.uploader_id == user.id).first()
+    
+    rating_sum = rating_stats[0] or 0
+    rating_count = rating_stats[1] or 0
+    average_rating = round(rating_sum / rating_count, 1) if rating_count > 0 else 0.0
+    
+    # Calculate contribution score (weighted metric)
+    # Formula: uploads * 10 + downloads * 1 + (average_rating * rating_count)
+    contribution_score = int(total_uploads * 10 + total_downloads + (average_rating * rating_count))
+    
+    return UserStats(
+        total_uploads=total_uploads,
+        total_downloads=int(total_downloads),
+        total_bookmarks=total_bookmarks,
+        contribution_score=contribution_score,
+        average_rating=average_rating
+    )
 
 
 @router.patch("/me", response_model=UserRead)
