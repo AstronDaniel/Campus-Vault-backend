@@ -1,16 +1,16 @@
 {
     "version": 2,
-    
+    "builds": [
+        {
+            "src": "app/main.py",
+            "use": "@vercel/python"
+        }
+    ],
     "routes": [
         {
             "src": "/(.*)",
             "dest": "app/main.py"
         }
-    ],
-    "functions": {
-        "app/main.py": {
-            "maxDuration": 60,
-            "memory": 1024
-        }
-    }
+    ]
+    
 }
